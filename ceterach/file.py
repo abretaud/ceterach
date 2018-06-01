@@ -70,8 +70,18 @@ class File(Page):
         :type key: str
         :param key: Session key returned by a previous upload that failed due to warnings.
         """
+        try:
+            token = self._api.tokens['edit']
+        except KeyError:
+            self._api.set_token("edit")
+            token = self._api.tokens.get('edit', None)
+            if token is None:
+                err = "You do not have the edit permission"
+                raise exc.PermissionsError(err)
+
         contents = fileobj.read()
         post_params = {
+            "action": 'upload',
             "filename": self.title,
             "text": text,
             "comment": summary,
@@ -85,8 +95,19 @@ class File(Page):
         res = self._api.call(post_params)
         if 'upload' in res and res['upload']['result'] == "Success":
             # Some attributes are now out of date
-            del self._dimensions, self._uploader, self._hash
+            if hasattr(self, '_dimensions') and hasattr(self, '_uploader') and  hasattr(self, '_hash'):
+                del self._dimensions, self._uploader, self._hash
             self._exists = True
+        elif 'upload' not in res or res['upload']['result'] == "Failure":
+            for reason in res['upload'].keys() - {"result"}:
+                break
+            else:
+                reason = None
+            err = res['upload'][reason] if reason else "Unknown error"
+            e = exc.EditError(err, code=reason or "unknownerror")
+            if reason == "spamblacklist":
+                e = exc.SpamFilterError(err, code=reason)
+            raise e
         return res
 
     def url(self, width=None, height=None) -> str:

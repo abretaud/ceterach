@@ -176,7 +176,11 @@ class MediaWiki:
         raiseme = None
         urlopen = getattr(self.opener, 'get' if is_get else 'post')
         try:
-            res = urlopen(self.api_url, **{"params" if is_get else "data": params})
+            if not is_get and 'file' in params:  # For uploads
+                params_clean = {i: params[i] for i in params if i!='file'}
+                res = urlopen(self.api_url, **{"data": params_clean}, files={'file': params['file']})
+            else:
+                res = urlopen(self.api_url, **{"params" if is_get else "data": params})
         except (requests.HTTPError, requests.ConnectionError) as e:
             # We need something that can be arbitrarily assigned attributes
             res = lambda: 0

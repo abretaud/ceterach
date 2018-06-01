@@ -95,7 +95,7 @@ class File(Page):
         res = self._api.call(post_params)
         if 'upload' in res and res['upload']['result'] == "Success":
             # Some attributes are now out of date
-            if hasattr(self, '_dimensions') and hasattr(self, '_uploader') and  hasattr(self, '_hash'):
+            if hasattr(self, '_dimensions') and hasattr(self, '_uploader') and hasattr(self, '_hash'):
                 del self._dimensions, self._uploader, self._hash
             self._exists = True
         elif 'upload' not in res or res['upload']['result'] == "Failure":
